@@ -120,7 +120,7 @@ def insert_into_db(collection):
             insert_document(doc, collection)
             if len(doc.keys()) == DEVICES_SIZE + 2:
                 for key, value in doc.items():
-                    if key == 'timestamp':
+                    if key == 'timestamp' or key == '_id':
                         continue
                     if not isinstance(value, (int, float)):
                         send_email('ERROR', 'Null values')
