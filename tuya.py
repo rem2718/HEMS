@@ -1,20 +1,26 @@
 import tinytuya
 import pymongo
-import os
 import asyncio
 import threading
 from datetime import datetime, timedelta
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 URL = "mongodb+srv://rem:paws2020@paws-and-stripes.ovdm3cw.mongodb.net/paws&stripes?retryWrites=true&w=majority"
 INTERVAL = timedelta(seconds=30)
 HALF_INTERVAL = INTERVAL/2
 EMAIL =  "mayakhalide2001@gmail.com"
 PASSWORD = "smarthomemaya"
+sender_email = "reemhejazi00@gmail.com"
+sender_password = "twoonetwo"  
+receiver_email = "219410002@psu.edu.sa"
 tuya_devices = []
 readings = {}
 doc = {}
+devices_num = 6
 
 def init():
     global cloud
@@ -35,6 +41,23 @@ def init():
     collection = db['hems']
     return collection
 
+def send_email(subject, body):
+    try:
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["To"] = receiver_email
+        message["Subject"] = subject
+        message.attach(MIMEText(body, "plain"))
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587 
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()  
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, receiver_email, message.as_string())
+
+    except Exception as e:
+        print("Error: Unable to send email.")
+        print(e)
 
 async def meross():
     http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
@@ -87,6 +110,16 @@ def insert_into_db(collection):
             prev_timestamp += INTERVAL
             doc['timestamp'] = prev_timestamp
             insert_document(doc, collection)
+            if len(doc.keys()) == devices_num + 2:
+                for key, value in doc.items():
+                    if key == 'timestamp':
+                        continue
+                    if not isinstance(value, (int, float)):
+                        send_email('ERROR', 'Null values')
+                        break
+            else:
+               send_email('ERROR', 'One or more of the devices is missing') 
+    
             print(f'{doc["timestamp"]}: done')
 
 
