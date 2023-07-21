@@ -18,42 +18,23 @@ EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 SENDER = os.getenv("SENDER")
 PASS = os.getenv("PASS")
-RECEIVER = os.getenv("RECEIVER")
+RECEIVER = [os.getenv("REM_EMAIL"), os.getenv("MAYA_EMAIL")]
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
 API_DEVICE = os.getenv("API_DEVICE")
 
 INTERVAL = timedelta(seconds=30)
+DAY = timedelta(hours=24)
 HALF_INTERVAL = INTERVAL/2
-tuya_devices = []
-readings = {}
-doc = {}
 DEVICES_SIZE = 6
+doc = {}
 
-def init():
-    global cloud
-    cloud = tinytuya.Cloud(
-            apiRegion="eu", 
-            apiKey=API_KEY, 
-            apiSecret=API_SECRET, 
-            apiDeviceID=API_DEVICE)
 
-    for dev in cloud.getdevices():
-        if dev['product_name'] != 'Smart Plug':
-            continue
-        tuya_devices.append(dev)
-        readings[dev['id']] = []
-    
-    client = pymongo.MongoClient(URL)
-    db = client['paws&stripes']
-    collection = db['hems']
-    return collection
-
-def send_email(subject, body):
+def send_email(subject, body, receiver):
     try:
         message = MIMEMultipart()
         message["From"] = SENDER
-        message["To"] = RECEIVER
+        message["To"] = receiver
         message["Subject"] = subject
         message.attach(MIMEText(body, "plain"))
         smtp_server = "smtp.gmail.com"
@@ -61,7 +42,7 @@ def send_email(subject, body):
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()  
             server.login(SENDER, PASS)
-            server.sendmail(SENDER, RECEIVER, message.as_string())
+            server.sendmail(SENDER, receiver, message.as_string())
 
     except Exception as e:
         print("Error: Unable to send email.")
@@ -75,23 +56,39 @@ async def meross():
     meross_devices = manager.find_devices(device_type="mss310")
     for dev in meross_devices:
         await dev.async_update()
-    prev_timestamp = datetime.now()
+        
+    prev_ts = prev_timestamp = datetime.now()
     mid = True
     while True:
         current_timestamp = datetime.now()
+        if current_timestamp - prev_ts >= DAY:
+            manager.close()
+            await http_api_client.async_logout()
+            http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
+            manager = MerossManager(http_client=http_api_client)
+            await manager.async_init()
+            prev_ts += DAY
+        
         if current_timestamp - prev_timestamp >= HALF_INTERVAL:
             if mid: 
                 for dev in meross_devices:
                     reading = await dev.async_get_instant_metrics()
                     doc[dev.name] = reading.power
             prev_timestamp += HALF_INTERVAL
-            mid != mid 
-    
-    manager.close()
-    await http_api_client.async_logout()
-        
+            mid != mid        
     
 def get_pow():
+    cloud = tinytuya.Cloud(
+            apiRegion="eu", 
+            apiKey=API_KEY, 
+            apiSecret=API_SECRET, 
+            apiDeviceID=API_DEVICE)
+    tuya_devices = []
+    for dev in cloud.getdevices():
+        if dev['product_name'] != 'Smart Plug':
+            continue
+        tuya_devices.append(dev)
+        
     prev_timestamp = datetime.now()
     mid = True
     while True:
@@ -103,43 +100,43 @@ def get_pow():
                     state = result['result'][4]['value']
                     doc[dev['name']] = state/10.0
             prev_timestamp += HALF_INTERVAL
-            mid != mid 
-  
-def insert_document(document, collection):
-    if "_id" in document:
-        del document["_id"] 
-    collection.insert_one(document)              
-         
-def insert_into_db(collection):
+            mid != mid  
+                      
+def validate():
+    if len(doc.keys()) == DEVICES_SIZE + 1:
+        for key, value in doc.items():
+            if key == 'timestamp':
+                continue
+            if not isinstance(value, (int, float)):
+                for email in RECEIVER:
+                    send_email('ERROR', 'Null values', email)
+                break
+    else:
+        for email in RECEIVER:
+            send_email('ERROR', 'One or more of the devices is missing', email)  
+                 
+def insert_into_db():
+    client = pymongo.MongoClient(URL)
+    db = client['paws&stripes']
+    collection = db['hems']
     prev_timestamp = datetime.now()
     while True:
         current_timestamp = datetime.now()
         if current_timestamp - prev_timestamp >= INTERVAL:
             prev_timestamp += INTERVAL
             doc['timestamp'] = prev_timestamp
-            insert_document(doc, collection)
-            if len(doc.keys()) == DEVICES_SIZE + 2:
-                for key, value in doc.items():
-                    if key == 'timestamp' or key == '_id':
-                        continue
-                    if not isinstance(value, (int, float)):
-                        send_email('ERROR', 'Null values')
-                        break
-            else:
-               send_email('ERROR', 'One or more of the devices is missing') 
-    
+            collection.insert_one(doc)   
+            validate()
             print(f'{doc["timestamp"]}: done')
+            doc.clear()
+            
 
-
-
-collection = init()    
 
 pow_collector = threading.Thread(target=get_pow)
-db_inserter = threading.Thread(target=insert_into_db, args=(collection,))
+db_inserter = threading.Thread(target=insert_into_db)
 
 pow_collector.start()
 db_inserter.start()
-
 
 asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
 loop = asyncio.get_event_loop()
