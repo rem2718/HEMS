@@ -26,7 +26,7 @@ API_DEVICE = os.getenv("API_DEVICE")
 INTERVAL = timedelta(seconds=30)
 DAY = timedelta(hours=24)
 HALF_INTERVAL = INTERVAL/2
-DEVICES_SIZE = 6
+DEVICES_SIZE = 3
 doc = {}
 
 
@@ -74,8 +74,8 @@ async def meross():
                 for dev in meross_devices:
                     reading = await dev.async_get_instant_metrics()
                     doc[dev.name] = reading.power
-            prev_timestamp += HALF_INTERVAL
-            mid != mid        
+            mid = not mid 
+            prev_timestamp += HALF_INTERVAL              
     
 def get_pow():
     cloud = tinytuya.Cloud(
@@ -96,12 +96,16 @@ def get_pow():
         if current_timestamp - prev_timestamp >= HALF_INTERVAL:
             if mid: 
                 for dev in tuya_devices:
-                    result = cloud.getstatus(dev['id'])
-                    state = result['result'][4]['value']
-                    doc[dev['name']] = state/10.0
+                    connected = cloud.getconnectstatus(dev['id'])
+                    if connected:
+                        result = cloud.getstatus(dev['id'])
+                        state = result['result'][4]['value']
+                        doc[dev['name']] = state/10.0
+                    else:
+                        doc[dev['name']] = None
+            mid = not mid  
             prev_timestamp += HALF_INTERVAL
-            mid != mid  
-                      
+                                
 def validate():
     if len(doc.keys()) == DEVICES_SIZE + 1:
         for key, value in doc.items():
@@ -117,8 +121,8 @@ def validate():
                  
 def insert_into_db():
     client = pymongo.MongoClient(URL)
-    db = client['paws&stripes']
-    collection = db['hems']
+    db = client['hemsproject']
+    collection = db['ourconsumption']
     prev_timestamp = datetime.now()
     while True:
         current_timestamp = datetime.now()
@@ -126,11 +130,10 @@ def insert_into_db():
             prev_timestamp += INTERVAL
             doc['timestamp'] = prev_timestamp
             collection.insert_one(doc)   
-            validate()
+            # validate()
             print(f'{doc["timestamp"]}: done')
             doc.clear()
             
-
 
 pow_collector = threading.Thread(target=get_pow)
 db_inserter = threading.Thread(target=insert_into_db)
