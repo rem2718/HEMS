@@ -29,9 +29,10 @@ DAY = timedelta(hours=24)
 HALF_INTERVAL = INTERVAL/2
 DEVICES_SIZE = [8, 6, 9]
 
-docs = [{} * 3]
-
+docs = [{}, {}, {}]
 ids = ['64d1548894895e0b4c1bc07f','64d154d494895e0b4c1bc081','64d154bc94895e0b4c1bc080']
+names = ['ayat', 'qater', 'ward']
+check = [True, True, True]
 
 dev_map = {
     'fridge_10': '64d160d293d44252699aa218',
@@ -58,6 +59,8 @@ dev_map = {
     'tv_30': '64d1687493d44252699aa22c',
     'office_strip_30': '64d165e693d44252699aa227',
 }
+
+check = { value : True for value in dev_map.values()}
 
 
 def send_email(subject, body, receiver):
@@ -138,16 +141,19 @@ def get_pow():
 def validate():
     for i in range(3):
         if len(docs[i].keys()) == DEVICES_SIZE[i] + 2:
+            check[i] = True
             for key, value in docs[i].items():
                 if key == 'timestamp' or key == 'user':
                     continue
-                if not isinstance(value, (int, float)):
+                if check[i] and not isinstance(value, (int, float)):
+                    check[i] = False
                     for email in RECEIVER:
-                        send_email('ERROR', f'Null values for user {i}', email)
+                        send_email('ERROR', f'Null values for user {names[i]}', email)
                     break
-        else:
+        elif check[i]:
+            check[i] = False
             for email in RECEIVER:
-                send_email('ERROR', f'One or more of the devices is missing for user {i}', email)  
+                send_email('ERROR', f'One or more of the devices is missing for user {names[i]}', email)  
                  
 def insert_into_db():
     client = pymongo.MongoClient(URL)
