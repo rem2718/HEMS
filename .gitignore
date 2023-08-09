@@ -7,3 +7,8 @@ dataset.xlsx
 output.txt
 .env
 launch.json
+.vscode/
+ayat.csv
+ward.csv
+qater.csv
+dcvdgb.py

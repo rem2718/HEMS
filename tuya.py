@@ -24,7 +24,7 @@ API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
 API_DEVICE = [os.getenv("API_DEVICE_10"), os.getenv("API_DEVICE_20"), os.getenv("API_DEVICE_30")]
 
-INTERVAL = timedelta(seconds=30)
+INTERVAL = timedelta(seconds=60)
 DAY = timedelta(hours=24)
 HALF_INTERVAL = INTERVAL/2
 DEVICES_SIZE = [8, 6, 9]
@@ -37,9 +37,9 @@ check = [[True, True], [True, True], [True, True]]
 dev_map = {
     'fridge_10': '64d160d293d44252699aa218',
     'charger_10': '64d1609b93d44252699aa217',
+    'food_processor_10': '64d15f9393d44252699aa215',
     'tv_10': '64d1605493d44252699aa216',
     'fridge_11': '64d161e193d44252699aa219',
-    'food_processor_10': '64d15f9393d44252699aa215',
     'lamp_10': '64d161fd93d44252699aa21a',
     'office_strip_10': '64d1629393d44252699aa21b',
     'tv_11': '64d162bf93d44252699aa21c',
@@ -59,9 +59,6 @@ dev_map = {
     'tv_30': '64d1687493d44252699aa22c',
     'office_strip_30': '64d165e693d44252699aa227',
 }
-
-check = { value : True for value in dev_map.values()}
-
 
 def send_email(subject, body, receiver):
     try:
@@ -144,7 +141,7 @@ def validate():
             check[i][0] = True
             j = 0
             for key, value in docs[i].items():
-                if key == 'timestamp' or key == 'user':
+                if key == 'timestamp' or key == 'user' or key == '_id':
                     continue
                 if not isinstance(value, (int, float)):
                     if check[i][1]:
