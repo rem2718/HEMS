@@ -169,7 +169,7 @@ def insert_into_db():
                 doc['timestamp'] = prev_timestamp
                 
             collection.insert_many(docs)   
-            validate()
+            # validate()
             print(f'{docs[0]["timestamp"]}: done')
             for doc in docs:
                 doc.clear()
@@ -181,7 +181,7 @@ db_inserter = threading.Thread(target=insert_into_db)
 pow_collector.start()
 db_inserter.start()
 
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
+# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
 loop = asyncio.get_event_loop()
 loop.run_until_complete(meross())
 loop.stop()
