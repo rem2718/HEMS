@@ -32,7 +32,7 @@ DEVICES_SIZE = [8, 6, 9]
 docs = [{}, {}, {}]
 ids = ['64d1548894895e0b4c1bc07f','64d154d494895e0b4c1bc081','64d154bc94895e0b4c1bc080']
 names = ['ayat', 'qater', 'ward']
-check = [True, True, True]
+check = [[True, True], [True, True], [True, True]]
 
 dev_map = {
     'fridge_10': '64d160d293d44252699aa218',
@@ -141,17 +141,21 @@ def get_pow():
 def validate():
     for i in range(3):
         if len(docs[i].keys()) == DEVICES_SIZE[i] + 2:
-            check[i] = True
+            check[i][0] = True
+            j = 0
             for key, value in docs[i].items():
                 if key == 'timestamp' or key == 'user':
                     continue
-                if check[i] and not isinstance(value, (int, float)):
-                    check[i] = False
-                    for email in RECEIVER:
-                        send_email('ERROR', f'Null values for user {names[i]}', email)
+                if not isinstance(value, (int, float)):
+                    if check[i][1]:
+                        check[i][1] = False
+                        for email in RECEIVER:
+                            send_email('ERROR', f'Null values for user {names[i]}', email)
                     break
-        elif check[i]:
-            check[i] = False
+                j += 1
+            if j == DEVICES_SIZE[i]: check[i][1] = True  
+        elif check[i][0]:
+            check[i][0] = False
             for email in RECEIVER:
                 send_email('ERROR', f'One or more of the devices is missing for user {names[i]}', email)  
                  
