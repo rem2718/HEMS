@@ -140,7 +140,7 @@ def get_pow():
                                 
 def validate():
     for i in range(len(names)):
-        if len(docs[i].keys()) == DEVICES_SIZE[i] + 2:
+        if len(docs[i].keys()) == DEVICES_SIZE[i] + 3:
             check[i][0] = True
             j = 0
             for key, value in docs[i].items():
