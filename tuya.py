@@ -173,7 +173,6 @@ def insert_into_db():
             print(f'{docs[0]["timestamp"]}: done')
             for doc in docs:
                 doc.clear()
-            
 
 pow_collector1 = threading.Thread(target=get_pow, args=(0,2))
 pow_collector2 = threading.Thread(target=get_pow, args=(3,3))
