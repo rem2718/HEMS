@@ -175,7 +175,7 @@ def insert_into_db():
                 doc.clear()
 
 pow_collector1 = threading.Thread(target=get_pow, args=(0,2))
-pow_collector2 = threading.Thread(target=get_pow, args=(3,3))
+pow_collector2 = threading.Thread(target=get_pow, args=(2,3))
 
 db_inserter = threading.Thread(target=insert_into_db)
 
