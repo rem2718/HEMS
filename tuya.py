@@ -107,7 +107,7 @@ async def meross():
             mid = not mid 
             prev_timestamp += HALF_INTERVAL              
     
-def get_pow():
+def get_pow(s,e):
     cloud = [tinytuya.Cloud(
             apiRegion="eu", 
             apiKey=API_KEY, 
@@ -122,7 +122,7 @@ def get_pow():
         current_timestamp = datetime.now()
         if current_timestamp - prev_timestamp >= HALF_INTERVAL:
             if mid: 
-                for i in range(3):
+                for i in range(s,e):
                     docs[i]['user'] = ObjectId(ids[i])
                     for dev in devices[i]:
                         connected = cloud[i].getconnectstatus(dev['id'])
@@ -175,10 +175,13 @@ def insert_into_db():
                 doc.clear()
             
 
-pow_collector = threading.Thread(target=get_pow)
+pow_collector1 = threading.Thread(target=get_pow, args=(0,2))
+pow_collector2 = threading.Thread(target=get_pow, args=(3,3))
+
 db_inserter = threading.Thread(target=insert_into_db)
 
-pow_collector.start()
+pow_collector1.start()
+pow_collector2.start()
 db_inserter.start()
 
 # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
