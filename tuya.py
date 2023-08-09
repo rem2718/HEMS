@@ -139,7 +139,7 @@ def get_pow():
             prev_timestamp += HALF_INTERVAL
                                 
 def validate():
-    for i in range(3):
+    for i in range(len(names)):
         if len(docs[i].keys()) == DEVICES_SIZE[i] + 2:
             check[i][0] = True
             j = 0
