@@ -107,14 +107,19 @@ async def meross():
             mid = not mid 
             prev_timestamp += HALF_INTERVAL              
     
-def get_pow(s,e):
-    cloud = [tinytuya.Cloud(
+def get_pow(user, n):
+    cloud = tinytuya.Cloud(
             apiRegion="eu", 
             apiKey=API_KEY, 
             apiSecret=API_SECRET, 
-            apiDeviceID=api) for api in API_DEVICE]
+            apiDeviceID=API_DEVICE[user])
     
-    devices = [c.getdevices() for c in cloud]
+    if n == 0:
+        devices = cloud.getdevices()[:DEVICES_SIZE/2] 
+    elif n == 1:
+        devices = cloud.getdevices()[DEVICES_SIZE/2:]
+    else:
+        devices = cloud.getdevices() 
      
     prev_timestamp = datetime.now()
     mid = True
@@ -122,16 +127,15 @@ def get_pow(s,e):
         current_timestamp = datetime.now()
         if current_timestamp - prev_timestamp >= HALF_INTERVAL:
             if mid: 
-                for i in range(s,e):
-                    docs[i]['user'] = ObjectId(ids[i])
-                    for dev in devices[i]:
-                        connected = cloud[i].getconnectstatus(dev['id'])
-                        if connected:
-                            result = cloud[i].getstatus(dev['id'])
-                            state = result['result'][4]['value']
-                            docs[i][dev_map[dev['name']]] = state/10.0
-                        else:
-                            docs[i][dev_map[dev['name']]] = None
+                docs[user]['user'] = ObjectId(ids[user])
+                for dev in devices[user]:
+                    connected = cloud.getconnectstatus(dev['id'])
+                    if connected:
+                        result = cloud.getstatus(dev['id'])
+                        state = result['result'][4]['value']
+                        docs[user][dev_map[dev['name']]] = state/10.0
+                    else:
+                        docs[user][dev_map[dev['name']]] = None
             mid = not mid  
             prev_timestamp += HALF_INTERVAL
                                 
@@ -174,13 +178,16 @@ def insert_into_db():
             for doc in docs:
                 doc.clear()
 
-pow_collector1 = threading.Thread(target=get_pow, args=(0,2))
-pow_collector2 = threading.Thread(target=get_pow, args=(2,3))
+ayat = threading.Thread(target=get_pow, args=(0,10))
+qater = threading.Thread(target=get_pow, args=(1,10))
+ward1 = threading.Thread(target=get_pow, args=(2,0))
+ward2 = threading.Thread(target=get_pow, args=(2,1))
 
 db_inserter = threading.Thread(target=insert_into_db)
-
-pow_collector1.start()
-pow_collector2.start()
+ayat.start()
+qater.start()
+ward1.start()
+ward2.start()
 db_inserter.start()
 
 # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
