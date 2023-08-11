@@ -93,17 +93,25 @@ async def meross():
     while True:
         current_timestamp = datetime.now()
         if current_timestamp - prev_ts >= DAY:
-            manager.close()
-            await http_api_client.async_logout()
-            http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
-            manager = MerossManager(http_client=http_api_client)
-            await manager.async_init()
+            try:
+                manager.close()
+                await http_api_client.async_logout()
+                
+                http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
+                manager = MerossManager(http_client=http_api_client)
+                await manager.async_init()
+            except:
+                print('meross logout error')
             prev_ts += DAY
         
         if current_timestamp - prev_timestamp >= INTERVAL:
-            for dev in meross_devices:
-                reading = await dev.async_get_instant_metrics()
-                docs[0][dev_map[dev.name]] = reading.power
+            try:
+                for dev in meross_devices:
+                    reading = await dev.async_get_instant_metrics()
+                    docs[0][dev_map[dev.name]] = reading.power
+            except:
+                print('meross error')  
+                 
             prev_timestamp += INTERVAL              
     
 def get_pow(user, n):
@@ -138,7 +146,7 @@ def get_pow(user, n):
                                 
 def validate():
     for i in range(len(names)):
-        if len(docs[i].keys()) == DEVICES_SIZE[i] + 3:
+        if len(docs[i].keys()) == DEVICES_SIZE[i] + 2:
             check[i][0] = True
             j = 0
             for key, value in docs[i].items():
@@ -149,6 +157,7 @@ def validate():
                         check[i][1] = False
                         for email in RECEIVER:
                             send_email('ERROR', f'Null values for user {names[i]}', email)
+                    # print(f'Null values for user {names[i]}')
                     break
                 j += 1
             if j == DEVICES_SIZE[i]: check[i][1] = True  
@@ -156,7 +165,8 @@ def validate():
             check[i][0] = False
             for email in RECEIVER:
                 send_email('ERROR', f'One or more of the devices is missing for user {names[i]}', email)  
-                 
+            # print(f'One or more of the devices is missing for user {names[i]}')   
+
 def insert_into_db():
     client = pymongo.MongoClient(URL)
     db = client['hemsproject']
@@ -185,9 +195,9 @@ ayat.start()
 qater.start()
 ward1.start()
 ward2.start()
-# db_inserter.start()
+db_inserter.start()
 
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
+# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
 loop = asyncio.get_event_loop()
 loop.run_until_complete(meross())
 loop.stop()
