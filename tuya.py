@@ -99,12 +99,10 @@ async def meross():
             await manager.async_init()
             prev_ts += DAY
         
-        if current_timestamp - prev_timestamp >= HALF_INTERVAL:
-            if mid: 
-                for dev in meross_devices:
-                    reading = await dev.async_get_instant_metrics()
-                    docs[0][dev_map[dev.name]] = reading.power
-            mid = not mid 
+        if current_timestamp - prev_timestamp >= INTERVAL:
+            for dev in meross_devices:
+                reading = await dev.async_get_instant_metrics()
+                docs[0][dev_map[dev.name]] = reading.power
             prev_timestamp += HALF_INTERVAL              
     
 def get_pow(user, n):
@@ -122,22 +120,19 @@ def get_pow(user, n):
         devices = cloud.getdevices() 
      
     prev_timestamp = datetime.now()
-    mid = True
     while True:
         current_timestamp = datetime.now()
-        if current_timestamp - prev_timestamp >= HALF_INTERVAL:
-            if mid: 
-                docs[user]['user'] = ObjectId(ids[user])
-                for dev in devices[user]:
-                    connected = cloud.getconnectstatus(dev['id'])
-                    if connected:
-                        result = cloud.getstatus(dev['id'])
-                        state = result['result'][4]['value']
-                        docs[user][dev_map[dev['name']]] = state/10.0
-                    else:
-                        docs[user][dev_map[dev['name']]] = None
-            mid = not mid  
-            prev_timestamp += HALF_INTERVAL
+        if current_timestamp - prev_timestamp >= INTERVAL:
+            docs[user]['user'] = ObjectId(ids[user])
+            for dev in devices:
+                connected = cloud.getconnectstatus(dev['id'])
+                if connected:
+                    result = cloud.getstatus(dev['id'])
+                    state = result['result'][4]['value']
+                    docs[user][dev_map[dev['name']]] = state/10.0
+                else:
+                    docs[user][dev_map[dev['name']]] = None 
+            prev_timestamp += INTERVAL
                                 
 def validate():
     for i in range(len(names)):
