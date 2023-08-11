@@ -26,7 +26,6 @@ API_DEVICE = [os.getenv("API_DEVICE_10"), os.getenv("API_DEVICE_20"), os.getenv(
 
 INTERVAL = timedelta(seconds=60)
 DAY = timedelta(hours=24)
-HALF_INTERVAL = INTERVAL/2
 DEVICES_SIZE = [8, 6, 9]
 
 docs = [{}, {}, {}]
@@ -88,7 +87,6 @@ async def meross():
         await dev.async_update()
         
     prev_ts = prev_timestamp = datetime.now()
-    mid = True
     while True:
         current_timestamp = datetime.now()
         if current_timestamp - prev_ts >= DAY:
@@ -103,7 +101,7 @@ async def meross():
             for dev in meross_devices:
                 reading = await dev.async_get_instant_metrics()
                 docs[0][dev_map[dev.name]] = reading.power
-            prev_timestamp += HALF_INTERVAL              
+            prev_timestamp += INTERVAL              
     
 def get_pow(user, n):
     cloud = tinytuya.Cloud(
