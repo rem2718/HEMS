@@ -38,16 +38,19 @@ dev_map = {
     'charger_10': '64d1609b93d44252699aa217',
     'food_processor_10': '64d15f9393d44252699aa215',
     'tv_10': '64d1605493d44252699aa216',
+    
     'fridge_11': '64d161e193d44252699aa219',
     'lamp_10': '64d161fd93d44252699aa21a',
     'office_strip_10': '64d1629393d44252699aa21b',
     'tv_11': '64d162bf93d44252699aa21c',
+    
     'fridge_20': '64d1646b93d44252699aa221',
     'coffee_maker_20': '64d1641a93d44252699aa220',
     'lamp_20': '64d1648093d44252699aa222',
     'charger_20': '64d162ff93d44252699aa21d',
     'fan_20': '64d1638293d44252699aa21e',
     'hair_dryer_20': '64d163dd93d44252699aa21f',
+    
     'cooler_30': '64d1656693d44252699aa225',
     'toaster_30': '64d1685693d44252699aa22b',
     'charger_30': '64d1682993d44252699aa22a',
@@ -110,10 +113,11 @@ def get_pow(user, n):
             apiSecret=API_SECRET, 
             apiDeviceID=API_DEVICE[user])
     
+    w = int(DEVICES_SIZE[user]/2)
     if n == 0:
-        devices = cloud.getdevices()[:DEVICES_SIZE/2] 
+        devices = cloud.getdevices()[:w] 
     elif n == 1:
-        devices = cloud.getdevices()[DEVICES_SIZE/2:]
+        devices = cloud.getdevices()[w:]
     else:
         devices = cloud.getdevices() 
      
@@ -181,9 +185,9 @@ ayat.start()
 qater.start()
 ward1.start()
 ward2.start()
-db_inserter.start()
+# db_inserter.start()
 
-# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
 loop = asyncio.get_event_loop()
 loop.run_until_complete(meross())
 loop.stop()
