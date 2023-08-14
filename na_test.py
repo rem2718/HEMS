@@ -1,8 +1,10 @@
 import pandas as pd
 
-ayat = pd.read_csv('ayat.csv')
-qater = pd.read_csv('qater.csv')
-ward = pd.read_csv('ward.csv')
+ayat = pd.read_csv('ayat.csv', parse_dates=['timestamp'])
+qater = pd.read_csv('qater.csv', parse_dates=['timestamp'])
+ward = pd.read_csv('ward.csv', parse_dates=['timestamp'])
+
+ts =  pd.Timestamp('2023-08-14 1:00:00')
 
 dev_map = {
     'fridge_10': '64d160d293d44252699aa218',
@@ -34,6 +36,10 @@ dev_map = {
 }
 
 inv_map = {v: k for k, v in dev_map.items()}
+
+ayat = ayat[ayat['timestamp'] > ts]
+qater = qater[qater['timestamp'] > ts]
+ward = ward[ward['timestamp'] > ts]
 
 ayat_na = ayat.isnull().sum()
 qater_na = qater.isnull().sum()
