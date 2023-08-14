@@ -83,11 +83,6 @@ def send_email(subject, body, receiver):
 async def meross():
     http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
     manager = MerossManager(http_client=http_api_client)
-    await manager.async_init()
-    await manager.async_device_discovery()
-    meross_devices = manager.find_devices(device_type="mss310")
-    for dev in meross_devices:
-        await dev.async_update()
         
     prev_ts = prev_timestamp = datetime.now()
     while True:
@@ -99,17 +94,17 @@ async def meross():
                 
                 http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
                 manager = MerossManager(http_client=http_api_client)
-                await manager.async_init()
-                await manager.async_device_discovery()
-                meross_devices = manager.find_devices(device_type="mss310")
-                for dev in meross_devices:
-                    await dev.async_update()
             except:
                 print('meross logout error')
             prev_ts += DAY
         
         if current_timestamp - prev_timestamp >= INTERVAL:
             try:
+                await manager.async_init()
+                await manager.async_device_discovery()
+                meross_devices = manager.find_devices(device_type="mss310")
+                for dev in meross_devices:
+                    await dev.async_update()
                 for dev in meross_devices:
                     reading = await dev.async_get_instant_metrics()
                     docs[0][dev_map[dev.name]] = reading.power

@@ -4,7 +4,7 @@ ayat = pd.read_csv('ayat.csv', parse_dates=['timestamp'])
 qater = pd.read_csv('qater.csv', parse_dates=['timestamp'])
 ward = pd.read_csv('ward.csv', parse_dates=['timestamp'])
 
-ts =  pd.Timestamp('2023-08-14 1:00:00')
+ts =  pd.Timestamp('2023-08-14 21:12:00')
 
 dev_map = {
     'fridge_10': '64d160d293d44252699aa218',
