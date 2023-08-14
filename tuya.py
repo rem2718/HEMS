@@ -100,6 +100,10 @@ async def meross():
                 http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
                 manager = MerossManager(http_client=http_api_client)
                 await manager.async_init()
+                await manager.async_device_discovery()
+                meross_devices = manager.find_devices(device_type="mss310")
+                for dev in meross_devices:
+                    await dev.async_update()
             except:
                 print('meross logout error')
             prev_ts += DAY
