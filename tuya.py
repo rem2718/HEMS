@@ -104,10 +104,12 @@ async def meross():
                 await manager.async_device_discovery()
                 meross_devices = manager.find_devices(device_type="mss310")
                 for dev in meross_devices:
-                    await dev.async_update()
-                for dev in meross_devices:
-                    reading = await dev.async_get_instant_metrics()
+                    reading = await dev.async_get_instant_metrics(timeout=5)
                     docs[0][dev_map[dev.name]] = reading.power
+                for dev in meross_devices:
+                    if docs[0][dev_map[dev.name]] == None:
+                        reading = dev.get_last_sample()
+                        docs[0][dev_map[dev.name]] = reading.power
             except:
                 print('meross error')  
                  
@@ -190,13 +192,13 @@ ward1 = threading.Thread(target=get_pow, args=(2,0))
 ward2 = threading.Thread(target=get_pow, args=(2,1))
 
 db_inserter = threading.Thread(target=insert_into_db)
-ayat.start()
-qater.start()
-ward1.start()
-ward2.start()
-db_inserter.start()
+# ayat.start()
+# qater.start()
+# ward1.start()
+# ward2.start()
+# db_inserter.start()
 
-# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
 loop = asyncio.get_event_loop()
 loop.run_until_complete(meross())
 loop.stop()
