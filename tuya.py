@@ -80,22 +80,27 @@ def send_email(subject, body, receiver):
         print("Error: Unable to send email.")
         print(e)
 
+async def logout(manager, client):
+    try:
+        manager.close()
+        await client.async_logout()
+        
+        client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
+        manager = MerossManager(http_client=client)
+        return manager
+    except:
+        print('meross logout error')
+        return None
+    
 async def meross():
-    http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
-    manager = MerossManager(http_client=http_api_client)
+    client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
+    manager = MerossManager(http_client=client)
         
     prev_ts = prev_timestamp = datetime.now()
     while True:
         current_timestamp = datetime.now()
         if current_timestamp - prev_ts >= DAY:
-            try:
-                manager.close()
-                await http_api_client.async_logout()
-                
-                http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
-                manager = MerossManager(http_client=http_api_client)
-            except:
-                print('meross logout error')
+            manager = logout(manager, client)
             prev_ts += DAY
         
         if current_timestamp - prev_timestamp >= INTERVAL:
@@ -103,16 +108,18 @@ async def meross():
                 await manager.async_init()
                 await manager.async_device_discovery()
                 meross_devices = manager.find_devices(device_type="mss310")
+                print(f'{len(meross_devices)} devices')
                 for dev in meross_devices:
                     reading = await dev.async_get_instant_metrics(timeout=5)
                     docs[0][dev_map[dev.name]] = reading.power
+                    
                 for dev in meross_devices:
                     if docs[0][dev_map[dev.name]] == None:
                         reading = dev.get_last_sample()
                         docs[0][dev_map[dev.name]] = reading.power
             except:
-                print('meross error')  
-                 
+                print('meross error') 
+                manager = logout(manager, client)      
             prev_timestamp += INTERVAL              
     
 def get_pow(user, n):
@@ -135,14 +142,17 @@ def get_pow(user, n):
         current_timestamp = datetime.now()
         if current_timestamp - prev_timestamp >= INTERVAL:
             docs[user]['user'] = ObjectId(ids[user])
-            for dev in devices:
-                connected = cloud.getconnectstatus(dev['id'])
-                if connected:
-                    result = cloud.getstatus(dev['id'])
-                    state = result['result'][4]['value']
-                    docs[user][dev_map[dev['name']]] = state/10.0
-                else:
-                    docs[user][dev_map[dev['name']]] = None 
+            try:
+                for dev in devices:
+                    connected = cloud.getconnectstatus(dev['id'])
+                    if connected:
+                        result = cloud.getstatus(dev['id'])
+                        state = result['result'][4]['value']
+                        docs[user][dev_map[dev['name']]] = state/10.0
+                    else:
+                        docs[user][dev_map[dev['name']]] = None
+            except:
+                print('tuya error') 
             prev_timestamp += INTERVAL
                                 
 def validate():
@@ -192,13 +202,13 @@ ward1 = threading.Thread(target=get_pow, args=(2,0))
 ward2 = threading.Thread(target=get_pow, args=(2,1))
 
 db_inserter = threading.Thread(target=insert_into_db)
-# ayat.start()
-# qater.start()
-# ward1.start()
-# ward2.start()
-# db_inserter.start()
+ayat.start()
+qater.start()
+ward1.start()
+ward2.start()
+db_inserter.start()
 
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
+# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
 loop = asyncio.get_event_loop()
 loop.run_until_complete(meross())
 loop.stop()
