@@ -4,6 +4,10 @@ ayat = pd.read_csv('ayat.csv', parse_dates=['timestamp'])
 qater = pd.read_csv('qater.csv', parse_dates=['timestamp'])
 ward = pd.read_csv('ward.csv', parse_dates=['timestamp'])
 
+ayat.drop(['user', '_id'], inplace=True, axis=1)
+qater.drop(['user', '_id'], inplace=True, axis=1)
+ward.drop(['user', '_id'], inplace=True, axis=1)
+
 ts =  pd.Timestamp('2023-08-16 00:00:00')
 
 
@@ -23,10 +27,10 @@ dev_map = {
 
 inv_map = {v: k for k, v in dev_map.items()}
 
-ayat = ayat[ayat['timestamp'] >= ts]
-ayat['energy'] = (ayat['64d162bf93d44252699aa21c'] * 1/60) / 1000
+# ayat = ayat[ayat['timestamp'] >= ts]
+# ayat['energy'] = (ayat['64d162bf93d44252699aa21c'] * 1/60) / 1000
 
-e = ayat['energy'].sum()
+# e = ayat['energy'].sum()
 
 # qater = qater[qater['timestamp'] > ts]
 # ward = ward[ward['timestamp'] > ts]
