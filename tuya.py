@@ -88,19 +88,19 @@ async def logout(manager, client):
         client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
         manager = MerossManager(http_client=client)
         return manager
-    except:
-        print('meross logout error')
+    except Exception as e:
+        print(f'meross logout error: {repr(e)}')
         return None
     
 async def meross():
     client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
     manager = MerossManager(http_client=client)
-        
+    count = 0    
     prev_ts = prev_timestamp = datetime.now()
     while True:
         current_timestamp = datetime.now()
         if current_timestamp - prev_ts >= DAY:
-            manager = logout(manager, client)
+            manager = await logout(manager, client)
             prev_ts += DAY
         
         if current_timestamp - prev_timestamp >= INTERVAL:
@@ -117,9 +117,13 @@ async def meross():
                     if docs[0][dev_map[dev.name]] == None:
                         reading = dev.get_last_sample()
                         docs[0][dev_map[dev.name]] = reading.power
-            except:
-                print('meross error') 
-                manager = logout(manager, client)      
+                print(docs[0])         
+                count = 0
+            except Exception as e:
+                print(f'meross error: {repr(e)}') 
+                if count == 5:
+                    manager = await logout(manager, client)    
+                count += 1  
             prev_timestamp += INTERVAL              
     
 def get_pow(user, n):
@@ -151,8 +155,8 @@ def get_pow(user, n):
                         docs[user][dev_map[dev['name']]] = state/10.0
                     else:
                         docs[user][dev_map[dev['name']]] = None
-            except:
-                print('tuya error') 
+            except Exception as e:
+                print(f'tuya error: {repr(e)}') 
             prev_timestamp += INTERVAL
                                 
 def validate():
@@ -202,11 +206,11 @@ ward1 = threading.Thread(target=get_pow, args=(2,0))
 ward2 = threading.Thread(target=get_pow, args=(2,1))
 
 db_inserter = threading.Thread(target=insert_into_db)
-ayat.start()
-qater.start()
-ward1.start()
-ward2.start()
-db_inserter.start()
+# ayat.start()
+# qater.start()
+# ward1.start()
+# ward2.start()
+# db_inserter.start()
 
 # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
 loop = asyncio.get_event_loop()
