@@ -25,7 +25,7 @@ API_SECRET = os.getenv("API_SECRET")
 API_DEVICE = [os.getenv("API_DEVICE_10"), os.getenv("API_DEVICE_20"), os.getenv("API_DEVICE_30")]
 
 INTERVAL = timedelta(seconds=60)
-DAY = timedelta(hours=24)
+DAY = timedelta(hours=20)
 DEVICES_SIZE = [8, 6, 9]
 
 docs = [{}, {}, {}]
@@ -83,14 +83,17 @@ def send_email(subject, body, receiver):
 async def logout(manager, client):
     try:
         manager.close()
-        await client.async_logout()
-        
-        client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
-        manager = MerossManager(http_client=client)
-        return manager
+        await client.async_logout()  
     except Exception as e:
         print(f'meross logout error: {repr(e)}')
-        return None
+        
+    try:
+        client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
+        manager = MerossManager(http_client=client)
+    except Exception as e:
+        print(f'meross login error: {repr(e)}')
+        
+    return manager
     
 async def meross():
     client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD)
@@ -116,8 +119,7 @@ async def meross():
                 for dev in meross_devices:
                     if docs[0][dev_map[dev.name]] == None:
                         reading = dev.get_last_sample()
-                        docs[0][dev_map[dev.name]] = reading.power
-                print(docs[0])         
+                        docs[0][dev_map[dev.name]] = reading.power       
                 count = 0
             except Exception as e:
                 print(f'meross error: {repr(e)}') 
