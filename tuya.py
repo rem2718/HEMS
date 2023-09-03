@@ -195,8 +195,10 @@ def insert_into_db():
             prev_timestamp += INTERVAL
             for doc in docs:
                 doc['timestamp'] = prev_timestamp
-                
-            collection.insert_many(docs)   
+            try:    
+                collection.insert_many(docs)   
+            except Exception as e:
+                print(f'mongodb error: {repr(e)}') 
             # validate()
             print(f'{docs[0]["timestamp"]}: done')
             for doc in docs:
